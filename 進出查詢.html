@@ -3,435 +3,341 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>商品合規檢查（中國 → 日本 → Amazon JP）</title>
-  <style>
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Noto Sans CJK TC',Helvetica,Arial; background:#f7fafc; color:#111}
-    .container{max-width:980px;margin:28px auto;padding:20px;background:white;border-radius:10px;box-shadow:0 6px 20px rgba(12,23,42,.08)}
-    h1{font-size:20px;margin-bottom:6px}
-    h2{font-size:16px;margin:0 0 8px}
-    label{display:block;margin:8px 0}
-    input[type=text], select, textarea{width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px}
-    .row{display:flex;gap:12px}
-    .col{flex:1}
-    .chip{display:inline-block;padding:6px 10px;border-radius:999px;border:1px solid #e2e8f0;margin-right:6px}
-    .btn{display:inline-block;padding:8px 12px;border-radius:8px;border:none;background:#0ea5a4;color:white;cursor:pointer}
-    .btn.secondary{background:#334155}
-    .step{padding:12px;border-radius:8px;border:1px dashed #e6edf2;background:#fbfeff;margin-bottom:12px}
-    .danger{color:#b91c1c;font-weight:600}
-    .note{background:#f8fafc;border-left:4px solid #60a5fa;padding:10px;border-radius:6px}
-    .footer-notes{margin-top:18px;padding-top:12px;border-top:1px dashed #e6edf2}
-    .category-note{background:#fff7ed;border:1px solid #fef3c7;padding:10px;border-radius:6px;margin-bottom:10px}
-    .result{padding:12px;border-radius:8px;margin:8px 0}
-    .result.ok{background:#ecfdf5;border:1px solid #86efac}
-    .result.warn{background:#fffbeb;border:1px solid #facc15}
-    .result.bad{background:#fff1f2;border:1px solid #fb7185}
-    pre{white-space:pre-wrap}
-  </style>
+  <title>Amazon JP 工具中心</title>
   <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <style>
+    /* --- Global Styles --- */
+    body {font-family: system-ui,-apple-system,Segoe UI,Roboto,'Noto Sans CJK TC',Helvetica,Arial; background: #f7fafc; color: #111; margin: 0;}
+    nav {display:flex;justify-content:center;gap:12px;margin:16px 0;}
+    .tab-btn {padding:8px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#fff;cursor:pointer; font-size: 15px;}
+    .tab-btn.active {background:#0ea5a4;color:white; border-color: #0ea5a4;}
+    .main-container{max-width:980px;margin:0 auto;padding:20px;}
+
+    /* --- Scoped Styles for FBA Margin Calculator --- */
+    .fba-calculator h1 { border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; }
+    .fba-calculator .calc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin: 24px 0; }
+    .fba-calculator .calc-grid label { display: flex; flex-direction: column; font-size: 14px; color: #334155; }
+    .fba-calculator .calc-grid input { padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; margin-top: 4px; font-size: 16px; }
+    .fba-calculator .results-grid { background: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; }
+    .fba-calculator .results-grid h2 { margin-top: 0; }
+    .fba-calculator .results-grid p { margin: 10px 0; font-size: 1.1em; display: flex; justify-content: space-between; }
+    .fba-calculator .results-grid strong { color: #1e293b; }
+    .fba-calculator .results-grid span { font-weight: bold; }
+    .fba-calculator .container-wrapper { background:white;border-radius:10px;box-shadow:0 6px 20px rgba(12,23,42,.08); padding: 20px; }
+
+    /* --- Scoped Styles for Compliance Checker --- */
+    .compliance-checker .container{padding:0;} /* Disable padding for the inner container */
+    .compliance-checker h1{font-size:20px;margin-bottom:6px}
+    .compliance-checker h2{font-size:16px;margin:0 0 8px}
+    .compliance-checker label{display:block;margin:8px 0}
+    .compliance-checker input[type=text], .compliance-checker select, .compliance-checker textarea{width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px; box-sizing: border-box;}
+    .compliance-checker .row{display:flex;gap:12px}
+    .compliance-checker .col{flex:1}
+    .compliance-checker .chip{display:inline-block;padding:6px 10px;border-radius:999px;border:1px solid #e2e8f0;margin-right:6px}
+    .compliance-checker .btn{display:inline-block;padding:8px 12px;border-radius:8px;border:none;background:#0ea5a4;color:white;cursor:pointer}
+    .compliance-checker .btn.secondary{background:#334155}
+    .compliance-checker .step{padding:12px;border-radius:8px;border:1px dashed #e6edf2;background:#fbfeff;margin-bottom:12px}
+    .compliance-checker .danger{color:#b91c1c;font-weight:600}
+    .compliance-checker .note{background:#f8fafc;border-left:4px solid #60a5fa;padding:10px;border-radius:6px}
+    .compliance-checker .footer-notes{margin-top:18px;padding-top:12px;border-top:1px dashed #e6edf2}
+    .compliance-checker .category-note{background:#fff7ed;border:1px solid #fef3c7;padding:10px;border-radius:6px;margin-bottom:10px}
+    .compliance-checker .result{padding:12px;border-radius:8px;margin:8px 0}
+    .compliance-checker .result.ok{background:#ecfdf5;border:1px solid #86efac}
+    .compliance-checker .result.warn{background:#fffbeb;border:1px solid #facc15}
+    .compliance-checker .result.bad{background:#fff1f2;border:1px solid #fb7185}
+    .compliance-checker pre{white-space:pre-wrap}
+  </style>
 </head>
 <body>
-  <div id="app" class="container">
-    <h1>商品合規檢查工具（中國 → 日本 → Amazon JP）</h1>
-    <p class="note">說明：這是一個<span class="danger">前端工具</span>，以 rules-based 邏輯和官方查詢連結輔助初步判斷。不能取代報關行或律師的專業意見。圖搜圖與官網查詢會以新分頁打開供人工確認。</p>
+  <div id="app" class="main-container">
+    <nav>
+      <button class="tab-btn" :class="{active:tab==='margin'}" @click="tab='margin'">FBA 毛利試算</button>
+      <button class="tab-btn" :class="{active:tab==='compliance'}" @click="tab='compliance'">商品合規檢查</button>
+    </nav>
+    
+    <div v-show="tab==='margin'" class="fba-calculator">
+      <div class="container-wrapper">
+        <h1>Amazon JP FBA 毛利試算</h1>
+        <p style="color: #475569;">輸入各項成本與售價，快速估算毛利與利潤率。</p>
+        <div class="calc-grid">
+          <label>售價 (JPY)<input type="number" v-model.number="price" placeholder="3980"></label>
+          <label>商品進貨成本<input type="number" v-model.number="cost" placeholder="500"></label>
+          <label>包裝/標籤/耗材<input type="number" v-model.number="pack" placeholder="100"></label>
+          <label>頭程運費/清關<input type="number" v-model.number="ship" placeholder="350"></label>
+          <label>Amazon 總費用<input type="number" v-model.number="amazon" placeholder="1200"></label>
+          <label>退貨/耗損預備金<input type="number" v-model.number="returns" placeholder="80"></label>
+          <label>廣告費 (PPC)<input type="number" v-model.number="ads" placeholder="200"></label>
+          <label>其他雜支<input type="number" v-model.number="other" placeholder="50"></label>
+          <label>銷售數量<input type="number" v-model.number="qty" placeholder="100"></label>
+        </div>
+        <div class="results-grid">
+          <h2>估算結果</h2>
+          <p><strong>每件總成本:</strong> <span>{{unitCost.toFixed(0)}} 円</span></p>
+          <p><strong>每件毛利:</strong> <span :style="{color: unitProfit >= 0 ? '#16a34a' : '#dc2626'}">{{unitProfit.toFixed(0)}} 円</span></p>
+          <p><strong>毛利率:</strong> <span :style="{color: profitMargin >= 0 ? '#16a34a' : '#dc2626'}">{{profitMargin.toFixed(2)}}%</span></p>
+          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 16px 0;">
+          <p>總營收: <span>{{totalRevenue.toLocaleString()}} 円</span></p>
+          <p>總成本: <span>{{totalCost.toLocaleString()}} 円</span></p>
+          <p><strong>總毛利:</strong> <span :style="{color: totalProfit >= 0 ? '#16a34a' : '#dc2626'}">{{totalProfit.toLocaleString()}} 円</span></p>
+        </div>
+      </div>
+    </div>
 
-    <div class="step">
-      <h2>Step 1 — 商品基本資訊</h2>
-      <label>商品名稱（必填）
-        <input type="text" v-model="form.name" placeholder="例如：便攜式藍牙喇叭"/>
-      </label>
-
-      <label>簡短描述（選填）
-        <textarea rows="2" v-model="form.description" placeholder="例如：含鋰電池，可用於戶外"></textarea>
-      </label>
-
-      <div class="row">
-        <div class="col">
-          <label>主類別（參照 Amazon 類別）
-            <select v-model="form.category">
-              <option value="">-- 請選擇 --</option>
-              <option v-for="c in amazonCategories" :value="c.key">{{c.name}}</option>
+    <div v-show="tab==='compliance'" class="compliance-checker">
+      <div class="container">
+        <h1>商品合規檢查工具（中國 → 日本 → Amazon JP）</h1>
+        <p class="note">說明：這是一個<span class="danger">前端工具</span>，以 rules-based 邏輯和官方查詢連結輔助初步判斷。不能取代報關行或律師的專業意見。圖搜圖與官網查詢會以新分頁打開供人工確認。</p>
+        <div class="step">
+          <h2>Step 1 — 商品基本資訊</h2>
+          <label>商品名稱（必填）
+            <input type="text" v-model="form.name" placeholder="例如：便攜式藍牙喇叭"/>
+          </label>
+          <label>簡短描述（選填）
+            <textarea rows="2" v-model="form.description" placeholder="例如：含鋰電池，可用於戶外"></textarea>
+          </label>
+          <div class="row">
+            <div class="col">
+              <label>主類別（參照 Amazon 類別）
+                <select v-model="form.category">
+                  <option value="">-- 請選擇 --</option>
+                  <option v-for="c in amazonCategories" :value="c.key">{{c.name}}</option>
+                </select>
+              </label>
+            </div>
+            <div class="col">
+              <label>細分類（可選）
+                <input type="text" v-model="form.subcategory" placeholder="可填更細項，例如：便攜式喇叭 / 無線耳機"/>
+              </label>
+            </div>
+          </div>
+          <label>產地（必填）
+            <select v-model="form.origin">
+              <option value="China">China（中國）</option>
+              <option value="Other">Other</option>
             </select>
           </label>
-        </div>
-        <div class="col">
-          <label>細分類（可選）
-            <input type="text" v-model="form.subcategory" placeholder="可填更細項，例如：便攜式喇叭 / 無線耳機"/>
+          <label>上傳商品圖片（選填 — 可做圖搜圖）
+            <input type="file" accept="image/*" @change="onImageUpload"/>
           </label>
         </div>
-      </div>
-
-      <label>產地（必填）
-        <select v-model="form.origin">
-          <option value="China">China（中國）</option>
-          <option value="Other">Other</option>
-        </select>
-      </label>
-
-      <label>上傳商品圖片（選填 — 可做圖搜圖）
-        <input type="file" accept="image/*" @change="onImageUpload"/>
-      </label>
-
-    </div>
-
-    <div class="step">
-      <h2>Step 2 — 根據類別顯示必要/可選欄位</h2>
-
-      <div v-if="selectedCategoryRules.length">
-        <h3>欄位需求（自動套用於你選的類別）</h3>
-        <ul>
-          <li v-for="f in selectedCategoryRules" :key="f.field">
-            <strong>{{f.label}}</strong> — <span v-if="f.required" class="danger">必填</span><span v-else>選填</span>
-          </li>
-        </ul>
-
-        <!-- Example dynamic inputs -->
-        <div v-if="needs.field_battery">
-          <label>是否含電池？ <select v-model="form.extra.battery"><option value="no">否</option><option value="lithium">鋰電池</option><option value="other">其他</option></select></label>
-        </div>
-
-        <div v-if="needs.field_chemicals">
-          <label>是否含化學/液體成分？ <select v-model="form.extra.chemical"><option value="no">否</option><option value="yes">是</option></select></label>
-        </div>
-
-        <div v-if="needs.field_contact_skin">
-          <label>是否會直接接觸皮膚？ <select v-model="form.extra.contactSkin"><option value="no">否</option><option value="yes">是</option></select></label>
-        </div>
-
-        <div v-if="needs.field_food">
-          <label>是否含動物性成分？ <select v-model="form.extra.animal"><option value="no">否</option><option value="yes">是</option></select></label>
-        </div>
-
-        <div v-if="needs.field_medical">
-          <label>是否有醫療宣稱（健診/診斷/治療）？ <select v-model="form.extra.medical"><option value="no">否</option><option value="yes">是</option></select></label>
-        </div>
-
-      </div>
-      <div v-else>
-        <p>請先從 Step 1 選擇「Amazon 類別」。</p>
-      </div>
-
-    </div>
-
-    <div class="step">
-      <h2>Step 3 — 初步判定與建議（前端 rules-based）</h2>
-      <button class="btn" @click="runChecks">執行檢查</button>
-      <button class="btn secondary" @click="resetResults" style="margin-left:10px">清除結果</button>
-
-      <div v-if="results.length" style="margin-top:12px">
-        <div v-for="r in results" :key="r.title" :class="['result', r.status]">
-          <strong>{{r.title}}</strong>
-          <p>{{r.summary}}</p>
-          <div v-if="r.actions && r.actions.length">
-            <small>可採取的下一步：</small>
+        <div class="step">
+          <h2>Step 2 — 根據類別顯示必要/可選欄位</h2>
+          <div v-if="selectedCategoryRules.length">
+            <h3>欄位需求（自動套用於你選的類別）</h3>
             <ul>
-              <li v-for="a in r.actions" :key="a">{{a}}</li>
+              <li v-for="f in selectedCategoryRules" :key="f.field">
+                <strong>{{f.label}}</strong> — <span v-if="f.required" class="danger">必填</span><span v-else>選填</span>
+              </li>
             </ul>
+            <div v-if="needs.field_battery">
+              <label>是否含電池？ <select v-model="form.extra.battery"><option value="no">否</option><option value="lithium">鋰電池</option><option value="other">其他</option></select></label>
+            </div>
+            <div v-if="needs.field_chemicals">
+              <label>是否含化學/液體成分？ <select v-model="form.extra.chemical"><option value="no">否</option><option value="yes">是</option></select></label>
+            </div>
+            <div v-if="needs.field_contact_skin">
+              <label>是否會直接接觸皮膚？ <select v-model="form.extra.contactSkin"><option value="no">否</option><option value="yes">是</option></select></label>
+            </div>
+            <div v-if="needs.field_food">
+              <label>是否含動物性成分？ <select v-model="form.extra.animal"><option value="no">否</option><option value="yes">是</option></select></label>
+            </div>
+            <div v-if="needs.field_medical">
+              <label>是否有醫療宣稱（健診/診斷/治療）？ <select v-model="form.extra.medical"><option value="no">否</option><option value="yes">是</option></select></label>
+            </div>
+          </div>
+          <div v-else>
+            <p>請先從 Step 1 選擇「Amazon 類別」。</p>
+          </div>
+        </div>
+        <div class="step">
+          <h2>Step 3 — 初步判定與建議（前端 rules-based）</h2>
+          <button class="btn" @click="runChecks">執行檢查</button>
+          <button class="btn secondary" @click="resetResults" style="margin-left:10px">清除結果</button>
+          <div v-if="results.length" style="margin-top:12px">
+            <div v-for="r in results" :key="r.title" :class="['result', r.status]">
+              <strong>{{r.title}}</strong>
+              <p>{{r.summary}}</p>
+              <div v-if="r.actions && r.actions.length">
+                <small>可採取的下一步：</small>
+                <ul>
+                  <li v-for="a in r.actions" :key="a">{{a}}</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <h2>Step 4 — 輔助快速查詢（可點開新分頁）</h2>
+          <div class="row" style="margin-bottom:8px">
+            <div class="col"><button class="btn" @click="openJapanCustoms">日本海關 HS / 關務查詢</button></div>
+            <div class="col"><button class="btn" @click="openChinaExport">中國出口限制查詢</button></div>
+          </div>
+          <div class="row" style="margin-bottom:8px">
+            <div class="col"><button class="btn" @click="openAmazonPolicy">Amazon JP 禁止/受限商品</button></div>
+            <div class="col"><button class="btn" @click="openJPlatPat">J-PlatPat（商標/專利查詢）</button></div>
+          </div>
+          <div class="row">
+            <div class="col"><button class="btn" @click="openTinEye">TinEye（圖搜圖，上傳）</button></div>
+            <div class="col"><button class="btn" @click="openGoogleImageInstructions">Google 圖像搜尋指引</button></div>
+          </div>
+        </div>
+        <div class="step">
+          <h2>Step 5 — 匯出 / 儲存（本地 HTML 匯出）</h2>
+          <p>你可以匯出本次檢查為簡單的 HTML 報告（只儲存在本地）。</p>
+          <button class="btn" @click="exportHtml">匯出 HTML 報告</button>
+        </div>
+        <div class="footer-notes">
+          <h2>使用到的類別說明與注意事項</h2>
+          <p>（系統會自動顯示你目前選擇過/使用到的類別及對應注意事項）</p>
+          <div v-if="usedCategories.length===0">
+            <em>尚未使用任何類別 — 請在 Step1 選擇商品類別並執行檢查。</em>
+          </div>
+          <div v-for="cat in usedCategories" :key="cat.key" class="category-note">
+            <strong>{{cat.name}}</strong>
+            <div style="margin-top:6px">
+              <strong>進口到日本需注意：</strong>
+              <ul><li v-for="n in cat.importNotes" :key="n">{{n}}</li></ul>
+              <strong>Amazon 上架限制：</strong>
+              <ul><li v-for="n in cat.amazonNotes" :key="n">{{n}}</li></ul>
+              <strong>建議檢測 / 送測實驗室：</strong>
+              <ul><li v-for="n in cat.testLabs" :key="n">{{n}}</li></ul>
+            </div>
           </div>
         </div>
       </div>
     </div>
-
-    <div class="step">
-      <h2>Step 4 — 輔助快速查詢（可點開新分頁）</h2>
-      <div class="row" style="margin-bottom:8px">
-        <div class="col"><button class="btn" @click="openJapanCustoms">日本海關 HS / 關務查詢</button></div>
-        <div class="col"><button class="btn" @click="openChinaExport">中國出口限制查詢</button></div>
-      </div>
-      <div class="row" style="margin-bottom:8px">
-        <div class="col"><button class="btn" @click="openAmazonPolicy">Amazon JP 禁止/受限商品</button></div>
-        <div class="col"><button class="btn" @click="openJPlatPat">J-PlatPat（商標/專利查詢）</button></div>
-      </div>
-      <div class="row">
-        <div class="col"><button class="btn" @click="openTinEye">TinEye（圖搜圖，上傳）</button></div>
-        <div class="col"><button class="btn" @click="openGoogleImageInstructions">Google 圖像搜尋指引</button></div>
-      </div>
-    </div>
-
-    <div class="step">
-      <h2>Step 5 — 匯出 / 儲存（本地 HTML 匯出）</h2>
-      <p>你可以匯出本次檢查為簡單的 HTML 報告（只儲存在本地）。</p>
-      <button class="btn" @click="exportHtml">匯出 HTML 報告</button>
-    </div>
-
-    <div class="footer-notes">
-      <h2>使用到的類別說明與注意事項</h2>
-      <p>（系統會自動顯示你目前選擇過/使用到的類別及對應注意事項）</p>
-
-      <div v-if="usedCategories.length===0">
-        <em>尚未使用任何類別 — 請在 Step1 選擇商品類別並執行檢查。</em>
-      </div>
-
-      <div v-for="cat in usedCategories" :key="cat.key" class="category-note">
-        <strong>{{cat.name}}</strong>
-        <div style="margin-top:6px">
-          <strong>進口到日本需注意：</strong>
-          <ul>
-            <li v-for="n in cat.importNotes" :key="n">{{n}}</li>
-          </ul>
-          <strong>Amazon 上架限制：</strong>
-          <ul>
-            <li v-for="n in cat.amazonNotes" :key="n">{{n}}</li>
-          </ul>
-          <strong>建議檢測 / 送測實驗室：</strong>
-          <ul>
-            <li v-for="n in cat.testLabs" :key="n">{{n}}</li>
-          </ul>
-        </div>
-      </div>
-
-    </div>
-
   </div>
 
-<script>
-const { createApp, ref, reactive, computed } = Vue;
+  <script>
+    const { createApp, ref, reactive, computed } = Vue;
 
-createApp({
-  setup(){
-    const amazonCategories = [
-  { key: 'electronics',  name: 'Electronics（電子產品）' },
-  { key: 'beauty',       name: 'Beauty & Personal Care（美容與個人護理）' },
-  { key: 'grocery',      name: 'Grocery & Gourmet Food（食品與美食）' },
-  { key: 'toys',         name: 'Toys & Games（玩具與遊戲）' },
-  { key: 'clothing',     name: 'Clothing, Shoes & Jewelry（服飾、鞋子與珠寶）' },
-  { key: 'home',         name: 'Home & Kitchen（家居與廚房用品）' },
-  { key: 'tools',        name: 'Tools & Home Improvement（工具與居家修繕）' },
-  { key: 'sports',       name: 'Sports & Outdoors（運動與戶外用品）' },
-  { key: 'automotive',   name: 'Automotive（汽車用品）' },
-  { key: 'baby',         name: 'Baby（嬰兒用品）' },
-  { key: 'pet',          name: 'Pet Supplies（寵物用品）' },
-  { key: 'industrial',   name: 'Industrial & Scientific（工業與科學用品）' },
-  { key: 'office',       name: 'Office Products（辦公用品）' },
-  { key: 'garden',       name: 'Garden & Outdoor（花園與戶外用品）' },
-  { key: 'software',     name: 'Software（軟體）' },
-  { key: 'videogames',   name: 'Video Games（電玩與遊戲）' },
-  { key: 'books',        name: 'Books（書籍）' }
-]
-;
+    createApp({
+      setup(){
+        // --- Shared State ---
+        const tab = ref('margin');
+        
+        // --- FBA Margin Calculator state and logic ---
+        const price = ref(3980);
+        const cost = ref(500);
+        const pack = ref(100);
+        const ship = ref(350);
+        const amazon = ref(1200);
+        const returns = ref(80);
+        const ads = ref(200);
+        const other = ref(50);
+        const qty = ref(100);
 
-    const categoryRules = {
-      electronics:[
-        {field:'battery',label:'是否含電池',required:true},
-        {field:'voltage',label:'電壓/功率',required:false},
-        {field:'ppe',label:'是否為專業/危險設備',required:false}
-      ],
-      beauty:[
-        {field:'contactSkin',label:'是否接觸皮膚',required:true},
-        {field:'ingredients',label:'成分資訊',required:false}
-      ],
-      grocery:[
-        {field:'food_ingredient',label:'是否含動物性成分',required:true},
-        {field:'shelf_life',label:'保存期限',required:false}
-      ],
-      toys:[
-        {field:'age_range',label:'建議年齡',required:true},
-        {field:'small_parts',label:'含小零件',required:false}
-      ],
-      clothing:[
-        {field:'material',label:'材質',required:true},
-        {field:'flame',label:'是否需防火合格',required:false}
-      ],
-      home:[
-        {field:'electrical',label:'是否含電器元件',required:false}
-      ],
-      automotive:[
-        {field:'safety',label:'是否為車用安全關鍵零件',required:true}
-      ],
-      baby:[
-        {field:'age',label:'適用年齡',required:true},
-        {field:'safety_cert',label:'是否有安全檢測',required:false}
-      ],
-      medical:[
-        {field:'medical_claim',label:'是否有醫療宣稱',required:true}
-      ]
-    };
+        const unitCost = computed(() => (cost.value || 0) + (pack.value || 0) + (ship.value || 0) + (amazon.value || 0) + (returns.value || 0) + (ads.value || 0) + (other.value || 0));
+        const unitProfit = computed(() => (price.value || 0) - unitCost.value);
+        const profitMargin = computed(() => (price.value > 0) ? (unitProfit.value / price.value) * 100 : 0);
+        const totalRevenue = computed(() => (price.value || 0) * (qty.value || 0));
+        const totalCost = computed(() => unitCost.value * (qty.value || 0));
+        const totalProfit = computed(() => unitProfit.value * (qty.value || 0));
 
-    const categoryNotes = {
-      electronics:{
-        importNotes:[
-          '含鋰電池的產品可能受航空運輸與 UN 規範限制',
-          '若為電器則可能需要 PSE（日本電気用品安全法）或其他安全標準'
-        ],
-        amazonNotes:[
-          '部分電子品類可能需 Amazon 的類別審核或證書',
-          '電池類需遵守運輸與標示規則'
-        ],
-        testLabs:['電氣安全（PSE）測試','EMC 電磁相容性測試','鋰電池安全測試']
-      },
-      beauty:{
-        importNotes:[
-          '化妝品/個人護理可能受藥機法或食品衛生法規範',
-          '成分不明或含受管制成分可能被禁止進口'
-        ],
-        amazonNotes:['含藥性宣稱者需醫療器械/藥品分類審議','需完整標示成分與中文/日文說明'],
-        testLabs:['成分分析（SDS）','微生物檢測','穩定性測試']
-      },
-      grocery:{
-        importNotes:['食品/食材需申報成分並可能需檢疫/衛生檢驗','動植物成分可能需檢疫證明'],
-        amazonNotes:['食品需遵守包裝/標示規範','某些食品受限或禁止 (酒精、動物來源等)'],
-        testLabs:['微生物檢測','成分與殘留農藥檢測','標示合規審查']
-      },
-      toys:{
-        importNotes:['含小零件或不符合安全標準的玩具可能被禁止','需要安全標示與年齡限制'],
-        amazonNotes:['兒童用品上架需提供測試報告或符合安全標準'],
-        testLabs:['機械/物理安全測試','化學物質含量測試']
-      },
-      clothing:{
-        importNotes:['某些材質或標示（成分/洗滌）需符合日本規定'],
-        amazonNotes:['服飾類可能需品牌授權或圖片/標示符合規範'],
-        testLabs:['材質成分檢測','染劑殘留檢測']
-      },
-      baby:{
-        importNotes:['嬰兒用品屬高風險類別，需嚴格安全性檢測與標示'],
-        amazonNotes:['嬰幼兒商品上架常需提供合格報告或合規文件'],
-        testLabs:['小物件窒息風險測試','材料安全檢測']
-      }
-    };
-
-    const form = reactive({
-      name:'', description:'', category:'', subcategory:'', origin:'China', imageFile:null,
-      extra:{battery:'no',chemical:'no',contactSkin:'no',animal:'no',medical:'no'}
-    });
-
-    const used = reactive(new Set());
-    const results = ref([]);
-
-    function onImageUpload(e){
-      const f = e.target.files[0];
-      form.imageFile = f || null;
-    }
-
-    const selectedCategoryRules = computed(()=>{
-      return categoryRules[form.category] || [];
-    });
-
-    const needs = computed(()=>{
-      // map to booleans used in template
-      return {
-        field_battery: form.category==='electronics',
-        field_chemicals: ['beauty','grocery'].includes(form.category),
-        field_contact_skin: form.category==='beauty',
-        field_food: form.category==='grocery',
-        field_medical: form.category==='medical'
-      }
-    });
-
-    function runChecks(){
-      results.value = [];
-      if(!form.name || !form.category){
-        alert('請先填寫商品名稱與選擇類別');
-        return;
-      }
-
-      // mark used category
-      used.add(form.category);
-
-      // Check 1: China export (simple rules)
-      const exportCheck = {title:'中國出口判定', status:'ok', summary:'預設為可出口', actions:[]};
-      if(form.origin!=='China'){
-        exportCheck.summary = '非中國產地 — 請依實際產地查詢當地規定';
-        exportCheck.status='warn';
-      } else {
-        if(form.category==='grocery' && form.extra.animal==='yes'){
-          exportCheck.summary='含動物性成分，可能需動植物檢疫證明或特殊輸出文件';
-          exportCheck.status='warn';
-          exportCheck.actions.push('聯繫報關行或台灣/中國出口部門確認檢疫證明');
+        // --- Compliance Checker state and logic ---
+        const amazonCategories = [
+          { key: 'electronics',  name: 'Electronics（電子產品）' }, { key: 'beauty', name: 'Beauty & Personal Care（美容與個人護理）' },
+          { key: 'grocery', name: 'Grocery & Gourmet Food（食品與美食）' }, { key: 'toys', name: 'Toys & Games（玩具與遊戲）' },
+          { key: 'clothing', name: 'Clothing, Shoes & Jewelry（服飾、鞋子與珠寶）' }, { key: 'home', name: 'Home & Kitchen（家居與廚房用品）' },
+          { key: 'tools', name: 'Tools & Home Improvement（工具與居家修繕）' }, { key: 'sports', name: 'Sports & Outdoors（運動與戶外用品）' },
+          { key: 'automotive', name: 'Automotive（汽車用品）' }, { key: 'baby', name: 'Baby（嬰兒用品）' },
+          { key: 'pet', name: 'Pet Supplies（寵物用品）' }, { key: 'industrial', name: 'Industrial & Scientific（工業與科學用品）' },
+          { key: 'office', name: 'Office Products（辦公用品）' }, { key: 'garden', name: 'Garden & Outdoor（花園與戶外用品）' },
+          { key: 'software', name: 'Software（軟體）' }, { key: 'videogames', name: 'Video Games（電玩與遊戲）' },
+          { key: 'books', name: 'Books（書籍）' }
+        ];
+        const categoryRules = {
+            electronics:[{field:'battery',label:'是否含電池',required:true},{field:'voltage',label:'電壓/功率',required:false},{field:'ppe',label:'是否為專業/危險設備',required:false}],
+            beauty:[{field:'contactSkin',label:'是否接觸皮膚',required:true},{field:'ingredients',label:'成分資訊',required:false}],
+            grocery:[{field:'food_ingredient',label:'是否含動物性成分',required:true},{field:'shelf_life',label:'保存期限',required:false}],
+            toys:[{field:'age_range',label:'建議年齡',required:true},{field:'small_parts',label:'含小零件',required:false}],
+            clothing:[{field:'material',label:'材質',required:true},{field:'flame',label:'是否需防火合格',required:false}],
+            home:[{field:'electrical',label:'是否含電器元件',required:false}],
+            automotive:[{field:'safety',label:'是否為車用安全關鍵零件',required:true}],
+            baby:[{field:'age',label:'適用年齡',required:true},{field:'safety_cert',label:'是否有安全檢測',required:false}],
+            medical:[{field:'medical_claim',label:'是否有醫療宣稱',required:true}]
+        };
+        const categoryNotes = {
+            electronics:{importNotes:['含鋰電池的產品可能受航空運輸與 UN 規範限制','若為電器則可能需要 PSE（日本電気用品安全法）或其他安全標準'],amazonNotes:['部分電子品類可能需 Amazon 的類別審核或證書','電池類需遵守運輸與標示規則'],testLabs:['電氣安全（PSE）測試','EMC 電磁相容性測試','鋰電池安全測試']},
+            beauty:{importNotes:['化妝品/個人護理可能受藥機法或食品衛生法規範','成分不明或含受管制成分可能被禁止進口'],amazonNotes:['含藥性宣稱者需醫療器械/藥品分類審議','需完整標示成分與中文/日文說明'],testLabs:['成分分析（SDS）','微生物檢測','穩定性測試']},
+            grocery:{importNotes:['食品/食材需申報成分並可能需檢疫/衛生檢驗','動植物成分可能需檢疫證明'],amazonNotes:['食品需遵守包裝/標示規範','某些食品受限或禁止 (酒精、動物來源等)'],testLabs:['微生物檢測','成分與殘留農藥檢測','標示合規審查']},
+            toys:{importNotes:['含小零件或不符合安全標準的玩具可能被禁止','需要安全標示與年齡限制'],amazonNotes:['兒童用品上架需提供測試報告或符合安全標準'],testLabs:['機械/物理安全測試','化學物質含量測試']},
+            clothing:{importNotes:['某些材質或標示（成分/洗滌）需符合日本規定'],amazonNotes:['服飾類可能需品牌授權或圖片/標示符合規範'],testLabs:['材質成分檢測','染劑殘留檢測']},
+            baby:{importNotes:['嬰兒用品屬高風險類別，需嚴格安全性檢測與標示'],amazonNotes:['嬰幼兒商品上架常需提供合格報告或合規文件'],testLabs:['小物件窒息風險測試','材料安全檢測']}
+        };
+        const form = reactive({name:'', description:'', category:'', subcategory:'', origin:'China', imageFile:null, extra:{battery:'no',chemical:'no',contactSkin:'no',animal:'no',medical:'no'}});
+        const used = reactive(new Set());
+        const results = ref([]);
+        function onImageUpload(e){ const f = e.target.files[0]; form.imageFile = f || null; }
+        const selectedCategoryRules = computed(()=> categoryRules[form.category] || []);
+        const needs = computed(()=> ({field_battery:form.category==='electronics',field_chemicals:['beauty','grocery'].includes(form.category),field_contact_skin:form.category==='beauty',field_food:form.category==='grocery',field_medical:form.category==='medical'}));
+        function runChecks(){
+            results.value = [];
+            if(!form.name || !form.category){ alert('請先填寫商品名稱與選擇類別'); return; }
+            used.add(form.category);
+            const exportCheck = {title:'中國出口判定', status:'ok', summary:'預設為可出口', actions:[]};
+            if(form.origin!=='China'){ exportCheck.summary = '非中國產地 — 請依實際產地查詢當地規定'; exportCheck.status='warn'; }
+            else { if(form.category==='grocery' && form.extra.animal==='yes'){ exportCheck.summary='含動物性成分，可能需動植物檢疫證明或特殊輸出文件'; exportCheck.status='warn'; exportCheck.actions.push('聯繫報關行或台灣/中國出口部門確認檢疫證明'); } }
+            results.value.push(exportCheck);
+            const importCheck = {title:'日本入境/法規判定', status:'ok', summary:'初步判定允許入口', actions:[]};
+            if(form.category==='electronics' && form.extra.battery==='lithium'){ importCheck.summary = '含鋰電池：運送限制（航空）、需遵守鋰電池相關規範，且若為電器需考慮 PSE/EMC 測試'; importCheck.status='warn'; importCheck.actions.push('確認是否需 PSE/電氣安全測試'); importCheck.actions.push('檢查航空/貨運承運商對鋰電池的要求'); }
+            if(form.category==='beauty' && form.extra.contactSkin==='yes'){ importCheck.summary = '化妝品/個護類，可能受藥機法或食品衛生法管制，特別是含有活性成分時'; importCheck.status='warn'; importCheck.actions.push('檢查成分是否受管制、準備 SDS 與成分表'); }
+            if(form.category==='grocery'){ importCheck.summary = '食品類需通過日本檢疫或衛生檢驗，且標示需符合日本語要求'; importCheck.status='warn'; importCheck.actions.push('準備成分表、原產地證明與必要檢疫文件'); }
+            results.value.push(importCheck);
+            const amazonCheck = {title:'Amazon JP 上架可行性', status:'ok', summary:'預設可上架（需確認細節）', actions:[]};
+            if(form.category==='electronics' && form.extra.battery==='lithium'){ amazonCheck.summary='含鋰電池，除運送限制外，Amazon 可能要求符合特定上架條件或提供安全證明'; amazonCheck.status='warn'; amazonCheck.actions.push('閱讀 Amazon 團隊的電池/危險物品政策'); }
+            if(form.category==='beauty' && form.extra.contactSkin==='yes'){ amazonCheck.summary='化妝品/個人護理類通常需要標示與成分資訊，若有醫療聲稱則可能被拒絕'; amazonCheck.status='warn'; amazonCheck.actions.push('檢查 Amazon Prohibited/Restricted 列表與類別限制'); }
+            if(form.category==='grocery'){ amazonCheck.summary='食品類別對包裝、標示與運輸有嚴格要求；某些食品需先取得日本進口許可'; amazonCheck.status='warn'; amazonCheck.actions.push('準備食品標示（日文）、保存期限與檢驗報告'); }
+            results.value.push(amazonCheck);
+            const ipCheck = {title:'智慧財產 / 侵權風險', status:'ok', summary:'初步無明顯侵權跡象（建議圖搜圖與商標查詢）', actions:[]};
+            if(form.name && form.name.length>30) ipCheck.summary='名稱偏長；請核對品牌/商標是否使用他人註冊商標';
+            if(form.imageFile) ipCheck.actions.push('使用 TinEye 或 Google 圖像搜尋檢查相似商品');
+            ipCheck.actions.push('在 J-PlatPat / WIPO 搜尋商標/設計專利');
+            results.value.push(ipCheck);
         }
+        function resetResults(){ results.value = []; }
+        function openAmazonPolicy(){ window.open('https://sellercentral.amazon.co.jp/gp/help/external/200386300','_blank'); }
+        function openJPlatPat(){ window.open('https://www.j-platpat.inpit.go.jp/','_blank'); }
+        function openJapanCustoms(){ window.open('https://www.customs.go.jp/english/','_blank'); }
+        function openChinaExport(){ window.open('https://www.customs.gov.cn/','_blank'); }
+        function openTinEye(){ window.open('https://tineye.com/','_blank'); }
+        function openGoogleImageInstructions(){ window.open('https://support.google.com/websearch/answer/1325808?hl=zh-Hant','_blank'); }
+        function exportHtml(){
+            const report = buildReportHtml();
+            const blob = new Blob([report],{type:'text/html'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = sanitizeFilename((form.name||'report')+'.html');
+            document.body.appendChild(a); a.click(); a.remove();
+            URL.revokeObjectURL(url);
+        }
+        function sanitizeFilename(s){ return s.replace(/[^a-z0-9_().-]/ig,'_'); }
+        function buildReportHtml(){
+            const now = new Date().toLocaleString();
+            return `<!doctype html><html><head><meta charset="utf-8"><title>檢查報告</title></head><body><h1>檢查報告</h1><p>商品：${escapeHtml(form.name||'')}</p><p>類別：${escapeHtml(form.category||'')}</p><p>時間：${now}</p><h2>結果</h2>${results.value.map(r=>`<div><h3>${escapeHtml(r.title)}</h3><p>${escapeHtml(r.summary)}</p><ul>${(r.actions||[]).map(a=>`<li>${escapeHtml(a)}</li>`).join('')}</ul></div>`).join('')}<hr><p>由本工具生成 — 僅供參考。</p></body></html>`;
+        }
+        function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+        const usedCategories = computed(()=>{
+            const arr = Array.from(used).map(k=>{
+                const cat = amazonCategories.find(c=>c.key===k);
+                const notes = categoryNotes[k] || {importNotes:['無預設注意事項'],amazonNotes:['無預設'],testLabs:['無']};
+                return {key:k,name:cat?cat.name:k, importNotes:notes.importNotes, amazonNotes:notes.amazonNotes, testLabs:notes.testLabs};
+            });
+            return arr;
+        });
+
+        // --- Return all combined properties ---
+        return {
+          // Shared
+          tab, 
+          // Margin calculator
+          price, cost, pack, ship, amazon, returns, ads, other, qty, 
+          unitCost, unitProfit, profitMargin, totalRevenue, totalCost, totalProfit,
+          // Compliance checker
+          amazonCategories, form, onImageUpload, selectedCategoryRules, needs, runChecks, results, resetResults, openAmazonPolicy, openJPlatPat, openJapanCustoms, openChinaExport, openTinEye, openGoogleImageInstructions, exportHtml, usedCategories
+        };
       }
-      results.value.push(exportCheck);
-
-      // Check 2: Japan import
-      const importCheck = {title:'日本入境/法規判定', status:'ok', summary:'初步判定允許入口', actions:[]};
-      if(form.category==='electronics' && form.extra.battery==='lithium'){
-        importCheck.summary = '含鋰電池：運送限制（航空）、需遵守鋰電池相關規範，且若為電器需考慮 PSE/EMC 測試';
-        importCheck.status='warn';
-        importCheck.actions.push('確認是否需 PSE/電氣安全測試');
-        importCheck.actions.push('檢查航空/貨運承運商對鋰電池的要求');
-      }
-      if(form.category==='beauty' && form.extra.contactSkin==='yes'){
-        importCheck.summary = '化妝品/個護類，可能受藥機法或食品衛生法管制，特別是含有活性成分時';
-        importCheck.status='warn';
-        importCheck.actions.push('檢查成分是否受管制、準備 SDS 與成分表');
-      }
-      if(form.category==='grocery'){
-        importCheck.summary = '食品類需通過日本檢疫或衛生檢驗，且標示需符合日本語要求';
-        importCheck.status='warn';
-        importCheck.actions.push('準備成分表、原產地證明與必要檢疫文件');
-      }
-      results.value.push(importCheck);
-
-      // Check 3: Amazon listing
-      const amazonCheck = {title:'Amazon JP 上架可行性', status:'ok', summary:'預設可上架（需確認細節）', actions:[]};
-      // sample rules
-      if(form.category==='electronics' && form.extra.battery==='lithium'){
-        amazonCheck.summary='含鋰電池，除運送限制外，Amazon 可能要求符合特定上架條件或提供安全證明';
-        amazonCheck.status='warn';
-        amazonCheck.actions.push('閱讀 Amazon 團隊的電池/危險物品政策');
-      }
-      if(form.category==='beauty' && form.extra.contactSkin==='yes'){
-        amazonCheck.summary='化妝品/個人護理類通常需要標示與成分資訊，若有醫療聲稱則可能被拒絕';
-        amazonCheck.status='warn';
-        amazonCheck.actions.push('檢查 Amazon Prohibited/Restricted 列表與類別限制');
-      }
-      if(form.category==='grocery'){
-        amazonCheck.summary='食品類別對包裝、標示與運輸有嚴格要求；某些食品需先取得日本進口許可';
-        amazonCheck.status='warn';
-        amazonCheck.actions.push('準備食品標示（日文）、保存期限與檢驗報告');
-      }
-      results.value.push(amazonCheck);
-
-      // Check 4: IP/侵權風險（very rough）
-      const ipCheck = {title:'智慧財產 / 侵權風險', status:'ok', summary:'初步無明顯侵權跡象（建議圖搜圖與商標查詢）', actions:[]};
-      if(form.name && form.name.length>30) ipCheck.summary='名稱偏長；請核對品牌/商標是否使用他人註冊商標';
-      if(form.imageFile) ipCheck.actions.push('使用 TinEye 或 Google 圖像搜尋檢查相似商品');
-      ipCheck.actions.push('在 J-PlatPat / WIPO 搜尋商標/設計專利');
-      results.value.push(ipCheck);
-
-    }
-
-    function resetResults(){ results.value = []; }
-
-    function openAmazonPolicy(){
-      const url = 'https://sellercentral.amazon.co.jp/gp/help/external/200386300';
-      window.open(url,'_blank');
-    }
-    function openJPlatPat(){ window.open('https://www.j-platpat.inpit.go.jp/','_blank'); }
-    function openJapanCustoms(){ window.open('https://www.customs.go.jp/english/','_blank'); }
-    function openChinaExport(){ window.open('https://www.customs.gov.cn/','_blank'); }
-    function openTinEye(){ window.open('https://tineye.com/','_blank'); }
-    function openGoogleImageInstructions(){ window.open('https://support.google.com/websearch/answer/1325808?hl=zh-Hant','_blank'); }
-
-    function exportHtml(){
-      const report = buildReportHtml();
-      const blob = new Blob([report],{type:'text/html'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = sanitizeFilename((form.name||'report')+'.html');
-      document.body.appendChild(a); a.click(); a.remove();
-      URL.revokeObjectURL(url);
-    }
-
-    function sanitizeFilename(s){ return s.replace(/[^a-z0-9_\-().]/ig,'_'); }
-
-    function buildReportHtml(){
-      const now = new Date().toLocaleString();
-      return `<!doctype html><html><head><meta charset="utf-8"><title>檢查報告</title></head><body><h1>檢查報告</h1><p>商品：${escapeHtml(form.name||'')}</p><p>類別：${escapeHtml(form.category||'')}</p><p>時間：${now}</p><h2>結果</h2>${results.value.map(r=>`<div><h3>${escapeHtml(r.title)}</h3><p>${escapeHtml(r.summary)}</p><ul>${(r.actions||[]).map(a=>`<li>${escapeHtml(a)}</li>`).join('')}</ul></div>`).join('')}<hr><p>由本工具生成 — 僅供參考。</p></body></html>`;
-    }
-
-    function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-    const usedCategories = computed(()=>{
-      const arr = Array.from(used).map(k=>{
-        const cat = amazonCategories.find(c=>c.key===k);
-        const notes = categoryNotes[k] || {importNotes:['無預設注意事項'],amazonNotes:['無預設'],testLabs:['無']};
-        return {key:k,name:cat?cat.name:k, importNotes:notes.importNotes, amazonNotes:notes.amazonNotes, testLabs:notes.testLabs};
-      });
-      return arr;
-    });
-
-    return {amazonCategories, form, onImageUpload, selectedCategoryRules, needs, runChecks, results, resetResults, openAmazonPolicy, openJPlatPat, openJapanCustoms, openChinaExport, openTinEye, openGoogleImageInstructions, exportHtml, usedCategories};
-  }
-}).mount('#app');
-</script>
+    }).mount('#app');
+  </script>
 </body>
 </html>
